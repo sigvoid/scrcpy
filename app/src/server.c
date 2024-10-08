@@ -949,7 +949,189 @@ device_read_info(sc_socket device_socket, struct sc_server_info *info) {
 
 static bool
 sc_server_wait_accept_connection(struct sc_server *server, struct sc_server_info *info) {
-    bool ok;
+    const struct sc_server_params *params = &server->params;
+    
+    const char *cmd[128];
+    unsigned count = 0;
+    cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
+    cmd[count++] = "app_process";
+
+#ifdef SERVER_DEBUGGER
+# define SERVER_DEBUGGER_PORT "5005"
+    cmd[count++] =
+# ifdef SERVER_DEBUGGER_METHOD_NEW
+        /* Android 9 and above */
+        "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,"
+        "server=y,address="
+# else
+        /* Android 8 and below */
+        "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
+# endif
+            SERVER_DEBUGGER_PORT;
+#endif
+    cmd[count++] = "/"; // unused
+    cmd[count++] = "com.genymobile.scrcpy.Server";
+    cmd[count++] = SCRCPY_VERSION;
+
+    unsigned dyn_idx = count; // from there, the strings are allocated
+#define ADD_PARAM(fmt, ...) do { \
+        char *p; \
+        if (asprintf(&p, fmt, ## __VA_ARGS__) == -1) { \
+            goto end; \
+        } \
+        cmd[count++] = p; \
+    } while(0)
+#define VALIDATE_STRING(s) do { \
+        if (!validate_string(s)) { \
+            goto end; \
+        } \
+    } while(0)
+
+    ADD_PARAM("scid=%08x", params->scid);
+    ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
+
+    if (!params->video) {
+        ADD_PARAM("video=false");
+    }
+    if (params->video_bit_rate) {
+        ADD_PARAM("video_bit_rate=%" PRIu32, params->video_bit_rate);
+    }
+    if (!params->audio) {
+        ADD_PARAM("audio=false");
+    }
+    if (params->audio_bit_rate) {
+        ADD_PARAM("audio_bit_rate=%" PRIu32, params->audio_bit_rate);
+    }
+    if (params->video_codec != SC_CODEC_H264) {
+        ADD_PARAM("video_codec=%s",
+                  sc_server_get_codec_name(params->video_codec));
+    }
+    if (params->audio_codec != SC_CODEC_OPUS) {
+        ADD_PARAM("audio_codec=%s",
+            sc_server_get_codec_name(params->audio_codec));
+    }
+    if (params->video_source != SC_VIDEO_SOURCE_DISPLAY) {
+        assert(params->video_source == SC_VIDEO_SOURCE_CAMERA);
+        ADD_PARAM("video_source=camera");
+    }
+    // If audio is enabled, an "auto" audio source must have been resolved
+    assert(params->audio_source != SC_AUDIO_SOURCE_AUTO || !params->audio);
+    if (params->audio_source != SC_AUDIO_SOURCE_OUTPUT && params->audio) {
+        ADD_PARAM("audio_source=%s",
+                  sc_server_get_audio_source_name(params->audio_source));
+    }
+    if (params->audio_dup) {
+        ADD_PARAM("audio_dup=true");
+    }
+    if (params->max_size) {
+        ADD_PARAM("max_size=%" PRIu16, params->max_size);
+    }
+    if (params->max_fps) {
+        VALIDATE_STRING(params->max_fps);
+        ADD_PARAM("max_fps=%s", params->max_fps);
+    }
+    if (params->lock_video_orientation != SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
+        ADD_PARAM("lock_video_orientation=%" PRIi8,
+                  params->lock_video_orientation);
+    }
+    if (server->tunnel.forward) {
+        ADD_PARAM("tunnel_forward=true");
+    }
+    if (params->crop) {
+        VALIDATE_STRING(params->crop);
+        ADD_PARAM("crop=%s", params->crop);
+    }
+    if (!params->control) {
+        // By default, control is true
+        ADD_PARAM("control=false");
+    }
+    if (params->display_id) {
+        ADD_PARAM("display_id=%" PRIu32, params->display_id);
+    }
+    if (params->camera_id) {
+        VALIDATE_STRING(params->camera_id);
+        ADD_PARAM("camera_id=%s", params->camera_id);
+    }
+    if (params->camera_size) {
+        VALIDATE_STRING(params->camera_size);
+        ADD_PARAM("camera_size=%s", params->camera_size);
+    }
+    if (params->camera_facing != SC_CAMERA_FACING_ANY) {
+        ADD_PARAM("camera_facing=%s",
+            sc_server_get_camera_facing_name(params->camera_facing));
+    }
+    if (params->camera_ar) {
+        VALIDATE_STRING(params->camera_ar);
+        ADD_PARAM("camera_ar=%s", params->camera_ar);
+    }
+    if (params->camera_fps) {
+        ADD_PARAM("camera_fps=%" PRIu16, params->camera_fps);
+    }
+    if (params->camera_high_speed) {
+        ADD_PARAM("camera_high_speed=true");
+    }
+    if (params->show_touches) {
+        ADD_PARAM("show_touches=true");
+    }
+    if (params->stay_awake) {
+        ADD_PARAM("stay_awake=true");
+    }
+    if (params->video_codec_options) {
+        VALIDATE_STRING(params->video_codec_options);
+        ADD_PARAM("video_codec_options=%s", params->video_codec_options);
+    }
+    if (params->audio_codec_options) {
+        VALIDATE_STRING(params->audio_codec_options);
+        ADD_PARAM("audio_codec_options=%s", params->audio_codec_options);
+    }
+    if (params->video_encoder) {
+        VALIDATE_STRING(params->video_encoder);
+        ADD_PARAM("video_encoder=%s", params->video_encoder);
+    }
+    if (params->audio_encoder) {
+        VALIDATE_STRING(params->audio_encoder);
+        ADD_PARAM("audio_encoder=%s", params->audio_encoder);
+    }
+    if (params->power_off_on_close) {
+        ADD_PARAM("power_off_on_close=true");
+    }
+    if (!params->clipboard_autosync) {
+        // By default, clipboard_autosync is true
+        ADD_PARAM("clipboard_autosync=false");
+    }
+    if (!params->downsize_on_error) {
+        // By default, downsize_on_error is true
+        ADD_PARAM("downsize_on_error=false");
+    }
+    if (!params->cleanup) {
+        // By default, cleanup is true
+        ADD_PARAM("cleanup=false");
+    }
+    if (!params->power_on) {
+        // By default, power_on is true
+        ADD_PARAM("power_on=false");
+    }
+    if (params->list & SC_OPTION_LIST_ENCODERS) {
+        ADD_PARAM("list_encoders=true");
+    }
+    if (params->list & SC_OPTION_LIST_DISPLAYS) {
+        ADD_PARAM("list_displays=true");
+    }
+    if (params->list & SC_OPTION_LIST_CAMERAS) {
+        ADD_PARAM("list_cameras=true");
+    }
+    if (params->list & SC_OPTION_LIST_CAMERA_SIZES) {
+        ADD_PARAM("list_camera_sizes=true");
+    }
+
+#undef ADD_PARAM
+
+    cmd[count++] = NULL;
+
+    LOGI("Execute on device: ");
+    for (unsigned int i = 0; i < count; i++) {
+        printf("%s ", cmd[i]);
+    }
 
     bool video = server->params.video;
     bool audio = server->params.audio;
@@ -993,7 +1175,7 @@ sc_server_wait_accept_connection(struct sc_server *server, struct sc_server_info
                                    : control_socket;
 
     // The sockets will be closed on stop if device_read_info() fails
-    ok = device_read_info(first_socket, info);
+    bool ok = device_read_info(first_socket, info);
     if (!ok) {
         goto fail;
     }
@@ -1005,6 +1187,11 @@ sc_server_wait_accept_connection(struct sc_server *server, struct sc_server_info
     server->video_socket = video_socket;
     server->audio_socket = audio_socket;
     server->control_socket = control_socket;
+
+end:
+    for (unsigned i = dyn_idx; i < count; ++i) {
+        free((char *) cmd[i]);
+    }
 
     return true;
 
