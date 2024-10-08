@@ -290,6 +290,8 @@ struct scrcpy_options {
     bool downsize_on_error;
     bool tcpip;
     const char *tcpip_dst;
+    bool listen;
+    const char *listen_port;
     bool select_usb;
     bool select_tcpip;
     bool cleanup;

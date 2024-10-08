@@ -55,6 +55,7 @@ enum {
     OPT_TUNNEL_PORT,
     OPT_NO_CLIPBOARD_AUTOSYNC,
     OPT_TCPIP,
+    OPT_LISTEN,
     OPT_RAW_KEY_EVENTS,
     OPT_NO_DOWNSIZE_ON_ERROR,
     OPT_OTG,
@@ -804,6 +805,13 @@ static const struct sc_option options[] = {
                 "to find the IP address of the current device (typically "
                 "connected over USB), enables TCP/IP mode, then connects to "
                 "this address before starting.",
+    },
+    {
+        .longopt_id = OPT_LISTEN,
+        .longopt = "listen",
+        .argdesc = "port",
+        .optional_arg = true,
+        .text = "Listen on the given TCP port (default is 5555).",
     },
     {
         .longopt_id = OPT_TIME_LIMIT,
@@ -2518,6 +2526,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_TCPIP:
                 opts->tcpip = true;
                 opts->tcpip_dst = optarg;
+                break;
+            case OPT_LISTEN:
+                opts->listen = true;
+                opts->listen_port = optarg;
                 break;
             case OPT_NO_DOWNSIZE_ON_ERROR:
                 opts->downsize_on_error = false;

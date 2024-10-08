@@ -450,6 +450,8 @@ scrcpy(struct scrcpy_options *options) {
         .downsize_on_error = options->downsize_on_error,
         .tcpip = options->tcpip,
         .tcpip_dst = options->tcpip_dst,
+        .listen = options->listen,
+        .listen_port = options->listen_port,
         .cleanup = options->cleanup,
         .power_on = options->power_on,
         .kill_adb_on_close = options->kill_adb_on_close,

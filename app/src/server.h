@@ -59,6 +59,8 @@ struct sc_server_params {
     bool downsize_on_error;
     bool tcpip;
     const char *tcpip_dst;
+    bool listen;
+    const char *listen_port;
     bool select_usb;
     bool select_tcpip;
     bool cleanup;
@@ -83,6 +85,7 @@ struct sc_server {
 
     struct sc_intr intr;
     struct sc_adb_tunnel tunnel;
+    sc_socket listen_socket;
 
     sc_socket video_socket;
     sc_socket audio_socket;
