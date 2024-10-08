@@ -1228,7 +1228,7 @@ run_server(void *data) {
     // is parsed, so it is not output)
     bool ok;
     if (!params->listen_port) {
-        sc_adb_start_server(&server->intr, 0);
+        ok = sc_adb_start_server(&server->intr, 0);
         if (!ok) {
             LOGE("Could not start adb server");
             goto error_connection_failed;
@@ -1352,7 +1352,7 @@ run_server(void *data) {
         }
 
         // server will connect to our server socket
-        execute_server(server, params);
+        pid = execute_server(server, params);
         if (pid == SC_PROCESS_NONE) {
             sc_adb_tunnel_close(&server->tunnel, &server->intr, serial,
                                 server->device_socket_name);
