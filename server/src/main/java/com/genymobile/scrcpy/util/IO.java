@@ -17,7 +17,7 @@ public final class IO {
     }
 
     public static void writeFully(OutputStream osm, byte[] buffer, int offset, int len) throws IOException {
-        int retries = 5;
+        int retries = 10;
         while (true) {
             try {
                 osm.write(buffer, offset, len);
@@ -27,19 +27,13 @@ public final class IO {
                 if (--retries == 0) {
                     throw e;
                 }
-                try {
-                    Thread.sleep(1); // 捕获 InterruptedException
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt(); // 重新设置中断状态
-                    throw new IOException("Thread was interrupted", ie);
-                }
             }
         }
     }
 
     public static void writeFully(OutputStream osm, ByteBuffer from) throws IOException {
         WritableByteChannel channel = Channels.newChannel(osm);
-        int retries = 5;
+        int retries = 10;
     
         while (true) {
             try {
@@ -50,12 +44,6 @@ public final class IO {
             } catch (IOException e) {
                 if (--retries == 0) {
                     throw e; 
-                }
-                try {
-                    Thread.sleep(1); // 捕获 InterruptedException
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt(); // 重新设置中断状态
-                    throw new IOException("Thread was interrupted", ie);
                 }
             }
         }
