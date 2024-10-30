@@ -1,6 +1,6 @@
 package com.genymobile.scrcpy.control;
 
-import android.net.LocalSocket;
+import java.net.Socket;
 
 import java.io.IOException;
 
@@ -9,7 +9,7 @@ public final class ControlChannel {
     private final ControlMessageReader reader;
     private final DeviceMessageWriter writer;
 
-    public ControlChannel(LocalSocket controlSocket) throws IOException {
+    public ControlChannel(Socket controlSocket) throws IOException {
         reader = new ControlMessageReader(controlSocket.getInputStream());
         writer = new DeviceMessageWriter(controlSocket.getOutputStream());
     }

@@ -46,6 +46,9 @@ public class Options {
     private List<CodecOption> videoCodecOptions;
     private List<CodecOption> audioCodecOptions;
 
+    private String ip;
+    private int port;
+
     private String videoEncoder;
     private String audioEncoder;
     private boolean powerOffScreenOnClose;
@@ -67,6 +70,14 @@ public class Options {
 
     public Ln.Level getLogLevel() {
         return logLevel;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public int getScid() {
@@ -264,6 +275,14 @@ public class Options {
             String key = arg.substring(0, equalIndex);
             String value = arg.substring(equalIndex + 1);
             switch (key) {
+                case "ip":
+                    if (!value.isEmpty()) {
+                        options.ip = value;
+                    }
+                    break;
+                case "port":
+                    options.port = Integer.parseInt(value);
+                    break;
                 case "scid":
                     int scid = Integer.parseInt(value, 0x10);
                     if (scid < -1) {

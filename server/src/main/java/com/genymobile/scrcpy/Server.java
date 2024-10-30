@@ -134,6 +134,8 @@ public final class Server {
             initThread = startInitThread(options, cleanUp);
         }
 
+        String ip = options.getIp();
+        int port = options.getPort();
         int scid = options.getScid();
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
@@ -148,7 +150,7 @@ public final class Server {
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
+        DesktopConnection connection = DesktopConnection.open(ip, port, video, audio, control, sendDummyByte);
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
