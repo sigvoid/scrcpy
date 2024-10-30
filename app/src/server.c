@@ -553,7 +553,7 @@ device_read_info_intr(struct sc_intr *intr, sc_socket device_socket,
     uint8_t buf[SC_DEVICE_NAME_FIELD_LENGTH];
     ssize_t r = net_recv_all_intr(intr, device_socket, buf, sizeof(buf));
     if (r < SC_DEVICE_NAME_FIELD_LENGTH) {
-        LOGE("Could not retrieve device information");
+        LOGE("device_read_info_intr: Could not retrieve device information");
         return false;
     }
     // in case the client sends garbage
@@ -937,7 +937,7 @@ device_read_info(sc_socket device_socket, struct sc_server_info *info) {
     uint8_t buf[SC_DEVICE_NAME_FIELD_LENGTH];
     ssize_t r = net_recv_all(device_socket, buf, sizeof(buf));
     if (r < SC_DEVICE_NAME_FIELD_LENGTH) {
-        LOGE("Could not retrieve device information");
+        LOGE("device_read_info: Could not retrieve device information");
         return false;
     }
     // in case the client sends garbage

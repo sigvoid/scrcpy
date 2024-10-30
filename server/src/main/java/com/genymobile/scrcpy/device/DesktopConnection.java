@@ -5,50 +5,32 @@ import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.StringUtils;
 
 import java.io.Closeable;
-import java.io.FileDescriptor;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.lang.reflect.Field;
 
 public final class DesktopConnection implements Closeable {
 
     private static final int DEVICE_NAME_FIELD_LENGTH = 64;
 
     private final Socket videoSocket;
-    private final FileDescriptor videoFd;
+    private final OutputStream videoOsm;
 
     private final Socket audioSocket;
-    private final FileDescriptor audioFd;
+    private final OutputStream audioOsm;
 
     private final Socket controlSocket;
     private final ControlChannel controlChannel;
-
-    public static FileDescriptor getFileDescriptorFromSocket(Socket socket) {
-        try {
-            // 使用反射访问 SocketImpl 对象
-            Field socketImplField = Socket.class.getDeclaredField("impl");
-            socketImplField.setAccessible(true);
-            Object socketImpl = socketImplField.get(socket);
-
-            // 获取 SocketImpl 中的 FileDescriptor
-            Field fileDescriptorField = socketImpl.getClass().getDeclaredField("fd");
-            fileDescriptorField.setAccessible(true);
-            return (FileDescriptor) fileDescriptorField.get(socketImpl);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 
     private DesktopConnection(Socket videoSocket, Socket audioSocket, Socket controlSocket) throws IOException {
         this.videoSocket = videoSocket;
         this.audioSocket = audioSocket;
         this.controlSocket = controlSocket;
 
-        videoFd = videoSocket != null ? getFileDescriptorFromSocket(videoSocket) : null;
-        audioFd = audioSocket != null ? getFileDescriptorFromSocket(audioSocket) : null;
+        videoOsm = videoSocket != null ? videoSocket.getOutputStream() : null;
+        audioOsm = audioSocket != null ? audioSocket.getOutputStream() : null;
         controlChannel = controlSocket != null ? new ControlChannel(controlSocket) : null;
     }
 
@@ -59,35 +41,35 @@ public final class DesktopConnection implements Closeable {
     }
 
     public static DesktopConnection open(String ipAddress, int port,
-                                         boolean video, boolean audio, boolean control, boolean sendDummyByte)
+            boolean video, boolean audio, boolean control, boolean sendDummyByte)
             throws IOException {
 
         Socket videoSocket = null;
         Socket audioSocket = null;
         Socket controlSocket = null;
         try {
-                    if (video) {
+            if (video) {
                 videoSocket = connect(ipAddress, port);
-                        if (sendDummyByte) {
-                            // send one byte so the client may read() to detect a connection error
-                            videoSocket.getOutputStream().write(0);
-                            sendDummyByte = false;
-                        }
-                    }
-                    if (audio) {
+                if (sendDummyByte) {
+                    // send one byte so the client may read() to detect a connection error
+                    videoSocket.getOutputStream().write(0);
+                    sendDummyByte = false;
+                }
+            }
+            if (audio) {
                 audioSocket = connect(ipAddress, port);
-                        if (sendDummyByte) {
-                            // send one byte so the client may read() to detect a connection error
-                            audioSocket.getOutputStream().write(0);
-                            sendDummyByte = false;
-                        }
-                    }
-                    if (control) {
+                if (sendDummyByte) {
+                    // send one byte so the client may read() to detect a connection error
+                    audioSocket.getOutputStream().write(0);
+                    sendDummyByte = false;
+                }
+            }
+            if (control) {
                 controlSocket = connect(ipAddress, port);
-                        if (sendDummyByte) {
-                            // send one byte so the client may read() to detect a connection error
-                            controlSocket.getOutputStream().write(0);
-                            sendDummyByte = false;
+                if (sendDummyByte) {
+                    // send one byte so the client may read() to detect a connection error
+                    controlSocket.getOutputStream().write(0);
+                    sendDummyByte = false;
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -151,16 +133,16 @@ public final class DesktopConnection implements Closeable {
         System.arraycopy(deviceNameBytes, 0, buffer, 0, len);
         // byte[] are always 0-initialized in java, no need to set '\0' explicitly
 
-        FileDescriptor fd = getFileDescriptorFromSocket(getFirstSocket());
-        IO.writeFully(fd, buffer, 0, buffer.length);
+        OutputStream osm = getFirstSocket().getOutputStream();
+        IO.writeFully(osm, buffer, 0, buffer.length);
     }
 
-    public FileDescriptor getVideoFd() {
-        return videoFd;
+    public OutputStream getVideoOsm() {
+        return videoOsm;
     }
 
-    public FileDescriptor getAudioFd() {
-        return audioFd;
+    public OutputStream getAudioOsm() {
+        return audioOsm;
     }
 
     public ControlChannel getControlChannel() {
