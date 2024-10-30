@@ -106,7 +106,7 @@ public final class DesktopConnection implements Closeable {
         return new DesktopConnection(videoSocket, audioSocket, controlSocket);
     }
 
-    private LocalSocket getFirstSocket() {
+    private Socket getFirstSocket() {
         if (videoSocket != null) {
             return videoSocket;
         }
