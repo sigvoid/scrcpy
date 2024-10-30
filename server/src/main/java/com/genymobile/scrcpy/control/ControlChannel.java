@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy.control;
 
 import java.net.Socket;
-
 import java.io.IOException;
 
 public final class ControlChannel {

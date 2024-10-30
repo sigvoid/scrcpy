@@ -6,14 +6,10 @@ import com.genymobile.scrcpy.util.StringUtils;
 
 import java.io.Closeable;
 import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.ServerSocket;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-
 import java.lang.reflect.Field;
 
 public final class DesktopConnection implements Closeable {
