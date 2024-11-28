@@ -17,35 +17,22 @@ public final class IO {
     }
 
     public static void writeFully(OutputStream osm, byte[] buffer, int offset, int len) throws IOException {
-        int retries = 10;
-        while (true) {
-            try {
-                osm.write(buffer, offset, len);
-                osm.flush();
-                break;
-            } catch (IOException e) {
-                if (--retries == 0) {
-                    throw e;
-                }
-            }
+        try {
+            osm.write(buffer, offset, len);
+            osm.flush();
+        } catch (IOException e) {
+            Ln.e("writeFully", e);
         }
     }
 
     public static void writeFully(OutputStream osm, ByteBuffer from) throws IOException {
         WritableByteChannel channel = Channels.newChannel(osm);
-        int retries = 10;
-    
-        while (true) {
-            try {
-                while (from.hasRemaining()) {
-                    channel.write(from);
-                }
-                break;
-            } catch (IOException e) {
-                if (--retries == 0) {
-                    throw e; 
-                }
+        try {
+            while (from.hasRemaining()) {
+                channel.write(from);
             }
+        } catch (IOException e) {
+            Ln.e("writeFully", e);
         }
     }
 
